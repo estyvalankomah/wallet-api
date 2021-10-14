@@ -76,33 +76,53 @@ def add_wallet():
         identification_card_type = request.json['identification_card_type']
         identification_card_number = request.json['identification_card_number']
         available_balance = request.json['available_balance']
-        # status = request.json['status']
-        # per_transaction_limit = request.json['per_transaction_limit']
 
-        new_wallet = Wallet(
-            first_name,
-            last_name,
-            other_name,
-            identification_card_type,
-            identification_card_number,
-            available_balance,
-            status = "active",
-            per_transaction_limit = 1000.00)
+        acceptable_IDs = ["Ghana card", "Passport", "Voter's ID", "Driver's License"]
 
-        db.session.add(new_wallet)
-        db.session.commit()
+        if ((type(first_name) == str) and (type(last_name) == str) and (type(other_name) == str) and (type(identification_card_number) == str)):
+            if(first_name and last_name and identification_card_number and available_balance):
+                if identification_card_type in acceptable_IDs:
+                    new_wallet = Wallet(
+                        first_name,
+                        last_name,
+                        other_name,
+                        identification_card_type,
+                        identification_card_number,
+                        available_balance,
+                        status = "active",
+                        per_transaction_limit = 1000.00)
 
-        result = wallet_schema.dump(new_wallet)
+                    db.session.add(new_wallet)
+                    db.session.commit()
 
-        return {
-            "message": "Wallet created successfully",
-            "data": result
-        }, 200
+                    result = wallet_schema.dump(new_wallet)
+
+                    return {
+                        "message": "Wallet created successfully",
+                        "data": result
+                    }, 200
+                else:
+                    return {
+                        "message": "Invalid ID card type",
+                        "data": {}
+                    }, 417
+            else:
+                return {
+                    "message": "Empty fields!",
+                    "data": {}
+                }, 412
+        else:
+            return {
+                    "message": "Invalid input!",
+                    "data": {}
+                }, 417
+
     except Exception as e:
         return {
-            "message": f"Missing or invalid {e.args[0]} keyword",
+            "message": f"Missing or invalid keyword: {e.args[0]}",
             "data": {}
-        }
+        }, 417
+        
     
 
 #Get all wallets
@@ -130,7 +150,6 @@ def get_wallet(id):
     wallet = Wallet.query.get(id)
     result = wallet_schema.dump(wallet)
 
-    #return wallet_schema.jsonify(wallet)
     if wallet:
         return {
             "message": "Wallet successfully fetched",
@@ -147,31 +166,16 @@ def get_wallet(id):
 @app.route('/api/v1/wallet/<id>', methods=['PUT'])
 def update_wallet(id):
     wallet = Wallet.query.get(id)
-
-    first_name = request.json['first_name']
-    last_name = request.json['last_name']
-    other_name = request.json['other_name']
-    identification_card_type = request.json['identification_card_type']
-    identification_card_number = request.json['identification_card_number']
-    available_balance = request.json['available_balance']
-    status = request.json['status']
-    per_transaction_limit = request.json['per_transaction_limit']
+    request_data = request.get_json()
 
     if wallet:
-        wallet.first_name = first_name
-        wallet.last_name = last_name
-        wallet.other_name = other_name
-        wallet.identification_card_type = identification_card_type
-        wallet.identification_card_number = identification_card_number
-        wallet.available_balance = available_balance
-        wallet.status = status
-        wallet.per_transaction_limit = per_transaction_limit
+        for key,value in request_data.items():
+            setattr(wallet, key, value)
 
         db.session.commit()
 
-        # return wallet_schema.jsonify(wallet)
         return {
-            "message": "Wallet updated successfully",
+            "message": "success",
             "data": wallet_schema.dump(wallet)
         }, 200
     else:
@@ -179,7 +183,7 @@ def update_wallet(id):
             "message": "Cannot update non-existent wallet",
             "data": wallet_schema.dump(wallet)
         }, 404
-
+   
 
 #Delete a wallet
 @app.route('/api/v1/wallet/<id>', methods=['DELETE'])
@@ -199,7 +203,6 @@ def delete_wallet(id):
             "message": "Cannot delete non-existent wallet",
             "data": wallet_schema.dump(wallet)
         }, 404
-    # return wallet_schema.jsonify(wallet)
 
 
 #Disable a wallet
@@ -212,12 +215,11 @@ def disable_wallet(id):
             return {
                 "message": "Wallet already disabled",
                 "data": wallet_schema.dump(wallet)
-            }, 200
+            }, 400
         else:
             wallet.status = "disabled"
             db.session.commit()
 
-        # return wallet_schema.jsonify(wallet)
             return {
                 "message": "Wallet disabled",
                 "data": wallet_schema.dump(wallet)
@@ -238,12 +240,11 @@ def activate_wallet(id):
             return {
                 "message": "Wallet is already active",
                 "data": wallet_schema.dump(wallet)
-            }, 200
+            }, 400
         else:
             wallet.status = "active"
             db.session.commit()
 
-            # return wallet_schema.jsonify(wallet)
             return {
                 "message": "Wallet activated",
                 "data": wallet_schema.dump(wallet)
@@ -269,26 +270,25 @@ def debit_wallet():
                 wallet.available_balance = new_balance
                 db.session.commit()
 
-                # return wallet_schema.jsonify(wallet)
                 return {
                     "message": f"Wallet debited with GH {amount}",
                     "data": wallet_schema.dump(wallet)
-                }
+                }, 200
             else:
                 return {
                     "message": "You don't have enough funds to perform this transaction",
                     "data": wallet_schema.dump(wallet)
-                }
+                }, 403
         else:
             return{
                 "message": "Cannot perform transaction on disabled wallet",
                 "data": wallet_schema.dump(wallet)
-            }
+            }, 403
     else:
         return {
             "message": "Cannot perform transaction on non-existent wallet",
             "data": wallet_schema.dump(wallet)
-        }
+        }, 404
 
 #Credit a wallet
 @app.route('/api/v1/wallet/credit', methods=['PUT'])
@@ -305,21 +305,20 @@ def credit_wallet():
             
             db.session.commit()
 
-            # return wallet_schema.jsonify(wallet)
             return {
                 "message": f"Wallet credited with GH {amount}",
                 "data": wallet_schema.dump(wallet)
-            }
+            }, 200
         else:
             return{
                 "message": "Cannot perform transaction on disabled wallet",
                 "data": wallet_schema.dump(wallet)
-            }
+            }, 403
     else:
         return {
             "message": "Cannot perform transaction on non-existent wallet",
             "data": wallet_schema.dump(wallet)
-        }
+        }, 404
     
 
 if __name__ == '__main__':
