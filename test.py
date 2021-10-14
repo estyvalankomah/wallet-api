@@ -32,28 +32,28 @@ class TestAPI(unittest.TestCase):
         "per_transaction_limit": 10000.00
     }
 
-    # def test_post_wallet(self):
-    #     response = requests.post(self.URL + '/wallet', json=self.data)
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(len(response.json()['data']), 9)
-    #     print("Post wallet test completed")
+    def test_post_wallet(self):
+        response = requests.post(self.URL + '/wallet', json=self.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()['data']), 9)
+        print("Post wallet test completed")
 
-    # def test_get_all_wallets(self):
-    #     response = requests.get(self.URL + '/wallets')
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(len(response.json()['data']), 5)
-    #     print("Get all wallets test completed")
+    def test_get_all_wallets(self):
+        response = requests.get(self.URL + '/wallets')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()['data']), 5)
+        print("Get all wallets test completed")
 
-    # def test_get_wallet(self):
-    #     response = requests.get(self.URL + '/wallet/2')
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(response.json()['data'], self.expected_result)
-    #     print("Get wallet by ID test completed")
+    def test_get_wallet(self):
+        response = requests.get(self.URL + '/wallet/2')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['data'], self.expected_result)
+        print("Get wallet by ID test completed")
 
-    # def test_delete_wallet(self):
-    #     response = requests.delete(self.URL + '/wallet/5')
-    #     self.assertEqual(response.status_code, 200)
-    #     print("Delete wallet test completed")
+    def test_delete_wallet(self):
+        response = requests.delete(self.URL + '/wallet/5')
+        self.assertEqual(response.status_code, 200)
+        print("Delete wallet test completed")
 
     def test_update_wallet(self):
         response = requests.put(self.URL + '/wallet/2', json=self.update_data)
