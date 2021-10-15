@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from responses import ApiResponse
 import os
+
 
 #Init app
 app = Flask(__name__)
@@ -97,33 +99,17 @@ def add_wallet():
 
                     result = wallet_schema.dump(new_wallet)
 
-                    return {
-                        "message": "Wallet created successfully",
-                        "data": result
-                    }, 200
+                    return ApiResponse("Wallet created successfully", result, 200)
                 else:
-                    return {
-                        "message": "Invalid ID card type",
-                        "data": {}
-                    }, 417
+                    return ApiResponse("Invalid ID card type", {}, 417)
             else:
-                return {
-                    "message": "Empty fields!",
-                    "data": {}
-                }, 412
+                return ApiResponse("Empty fields!", {}, 412)
         else:
-            return {
-                    "message": "Invalid input!",
-                    "data": {}
-                }, 417
+            return ApiResponse("Invalid input!", {}, 417)
 
     except Exception as e:
-        return {
-            "message": f"Missing or invalid keyword: {e.args[0]}",
-            "data": {}
-        }, 417
-        
-    
+        message = f"Missing or invalid keyword: {e.args[0]}"
+        return ApiResponse(message, {}, 417)
 
 #Get all wallets
 @app.route('/api/v1/wallets', methods=['GET'])
@@ -131,17 +117,10 @@ def get_wallets():
     all_wallets = Wallet.query.all()
     result = wallets_schema.dump(all_wallets)
 
-    # return jsonify(result)
     if result:
-        return {
-            "message": "Wallets succesfully fetched",
-            "data": result
-        }, 200
+        return ApiResponse("Wallets succesfully fetched", result, 200)
     else:
-        return {
-            "message": "No wallets exist",
-            "data": result
-        }, 404
+        return ApiResponse("No wallets exist", result, 404)
 
 
 #Get single wallets
@@ -151,15 +130,9 @@ def get_wallet(id):
     result = wallet_schema.dump(wallet)
 
     if wallet:
-        return {
-            "message": "Wallet successfully fetched",
-            "data": result
-        }, 200
+        return ApiResponse("Wallet succesfully fetched", result, 200)
     else:
-        return {
-            "message": "Wallet does not exist",
-            "data": result
-        }, 404
+        return ApiResponse("Wallet does not exist", result, 404)
 
 
 #Update a wallet
@@ -174,15 +147,9 @@ def update_wallet(id):
 
         db.session.commit()
 
-        return {
-            "message": "success",
-            "data": wallet_schema.dump(wallet)
-        }, 200
+        return ApiResponse("Wallet updated successfully", wallet_schema.dump(wallet), 200)
     else:
-        return{
-            "message": "Cannot update non-existent wallet",
-            "data": wallet_schema.dump(wallet)
-        }, 404
+        return ApiResponse("Cannot update non-existent wallet", wallet_schema.dump(wallet), 404)
    
 
 #Delete a wallet
@@ -194,15 +161,9 @@ def delete_wallet(id):
         db.session.delete(wallet)
         db.session.commit()
 
-        return {
-            "message": "Wallet deleted successfully",
-            "data": wallet_schema.dump(wallet)
-        }, 200
+        return ApiResponse("Wallet deleted successfully", wallet_schema.dump(wallet), 200)
     else:
-        return {
-            "message": "Cannot delete non-existent wallet",
-            "data": wallet_schema.dump(wallet)
-        }, 404
+        return ApiResponse("Cannot delete non-existent wallet", wallet_schema.dump(wallet), 404)
 
 
 #Disable a wallet
@@ -212,23 +173,14 @@ def disable_wallet(id):
 
     if wallet:
         if wallet.status == "disabled":
-            return {
-                "message": "Wallet already disabled",
-                "data": wallet_schema.dump(wallet)
-            }, 400
+            return ApiResponse("Wallet already disabled", wallet_schema.dump(wallet), 400)
         else:
             wallet.status = "disabled"
             db.session.commit()
 
-            return {
-                "message": "Wallet disabled",
-                "data": wallet_schema.dump(wallet)
-            }, 200
+            return ApiResponse("Wallet disabled succesfully", wallet_schema.dump(wallet), 200)
     else:
-        return {
-            "message": "Cannot disable non-existent wallet",
-            "data": wallet_schema.dump(wallet)
-        }, 404
+        return ApiResponse("Cannot disable non-existent wallet", wallet_schema.dump(wallet), 404)
 
 #Activate a wallet
 @app.route('/api/v1/wallet/<id>/activate', methods=['PUT'])
@@ -237,23 +189,14 @@ def activate_wallet(id):
 
     if wallet:
         if wallet.status == "active":
-            return {
-                "message": "Wallet is already active",
-                "data": wallet_schema.dump(wallet)
-            }, 400
+            return ApiResponse("Wallet already active", wallet_schema.dump(wallet), 400)
         else:
             wallet.status = "active"
             db.session.commit()
 
-            return {
-                "message": "Wallet activated",
-                "data": wallet_schema.dump(wallet)
-            }, 200
+            return ApiResponse("Wallet activated succesfully", wallet_schema.dump(wallet), 200)
     else:
-        return {
-            "message": "Wallet does not exist",
-            "data": wallet_schema.dump(wallet)
-        }, 404
+        return ApiResponse("Wallet does not exist", wallet_schema.dump(wallet), 404)
 
 #Debit a wallet
 @app.route('/api/v1/wallet/debit', methods=['PUT'])
@@ -270,25 +213,14 @@ def debit_wallet():
                 wallet.available_balance = new_balance
                 db.session.commit()
 
-                return {
-                    "message": f"Wallet debited with GH {amount}",
-                    "data": wallet_schema.dump(wallet)
-                }, 200
+                message = f"Wallet debited with GH {amount}"
+                return ApiResponse(message, wallet_schema.dump(wallet), 200)
             else:
-                return {
-                    "message": "You don't have enough funds to perform this transaction",
-                    "data": wallet_schema.dump(wallet)
-                }, 403
+                return ApiResponse("You don't have enough funds to perform this transaction", wallet_schema.dump(wallet), 403)
         else:
-            return{
-                "message": "Cannot perform transaction on disabled wallet",
-                "data": wallet_schema.dump(wallet)
-            }, 403
+            return ApiResponse("Cannot perform transaction on disabled wallet", wallet_schema.dump(wallet), 403)
     else:
-        return {
-            "message": "Cannot perform transaction on non-existent wallet",
-            "data": wallet_schema.dump(wallet)
-        }, 404
+        return ApiResponse("Cannot perform transaction on non-existent wallet", wallet_schema.dump(wallet), 404)
 
 #Credit a wallet
 @app.route('/api/v1/wallet/credit', methods=['PUT'])
@@ -305,20 +237,12 @@ def credit_wallet():
             
             db.session.commit()
 
-            return {
-                "message": f"Wallet credited with GH {amount}",
-                "data": wallet_schema.dump(wallet)
-            }, 200
+            message = f"Wallet credited with GH {amount}"
+            return ApiResponse(message, wallet_schema.dump(wallet), 200)
         else:
-            return{
-                "message": "Cannot perform transaction on disabled wallet",
-                "data": wallet_schema.dump(wallet)
-            }, 403
+            return ApiResponse("Cannot perform transaction on disabled wallet", wallet_schema.dump(wallet), 403)
     else:
-        return {
-            "message": "Cannot perform transaction on non-existent wallet",
-            "data": wallet_schema.dump(wallet)
-        }, 404
+        return ApiResponse("Cannot perform transaction on non-existent wallet", wallet_schema.dump(wallet), 404)
     
 
 if __name__ == '__main__':
