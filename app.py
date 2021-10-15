@@ -208,15 +208,18 @@ def debit_wallet():
 
     if wallet:
         if wallet.status == "active":
-            new_balance = wallet.available_balance - amount
-            if new_balance >= 0:
-                wallet.available_balance = new_balance
-                db.session.commit()
+            if amount <= wallet.per_transaction_limit:
+                new_balance = wallet.available_balance - amount
+                if new_balance >= 0:
+                    wallet.available_balance = new_balance
+                    db.session.commit()
 
-                message = f"Wallet debited with GH {amount}"
-                return ApiResponse(message, wallet_schema.dump(wallet), 200)
+                    message = f"Wallet debited with GH {amount}"
+                    return ApiResponse(message, wallet_schema.dump(wallet), 200)
+                else:
+                    return ApiResponse("Not enough funds to perform this transaction", wallet_schema.dump(wallet), 403)
             else:
-                return ApiResponse("You don't have enough funds to perform this transaction", wallet_schema.dump(wallet), 403)
+                return ApiResponse("This amount exceeds the transaction limit", wallet_schema.dump(wallet), 403)
         else:
             return ApiResponse("Cannot perform transaction on disabled wallet", wallet_schema.dump(wallet), 403)
     else:
@@ -232,13 +235,16 @@ def credit_wallet():
 
     if wallet:
         if wallet.status == "active":
-            new_balance = wallet.available_balance + amount
-            wallet.available_balance = new_balance
-            
-            db.session.commit()
+            if amount <= wallet.per_transaction_limit:
+                new_balance = wallet.available_balance + amount
+                wallet.available_balance = new_balance
+                
+                db.session.commit()
 
-            message = f"Wallet credited with GH {amount}"
-            return ApiResponse(message, wallet_schema.dump(wallet), 200)
+                message = f"Wallet credited with GH {amount}"
+                return ApiResponse(message, wallet_schema.dump(wallet), 200)
+            else:
+                return ApiResponse("This amount exceeds the transaction limit", wallet_schema.dump(wallet), 403)
         else:
             return ApiResponse("Cannot perform transaction on disabled wallet", wallet_schema.dump(wallet), 403)
     else:
