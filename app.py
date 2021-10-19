@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_cors import CORS
-from responses import ApiResponse
+from responses import ApiResponse, GetResponse
 import os
 
 
@@ -116,11 +116,15 @@ def add_wallet():
 #Get all wallets
 @app.route('/api/v1/wallets', methods=['GET'])
 def get_wallets():
-    all_wallets = Wallet.query.all()
-    result = wallets_schema.dump(all_wallets)
+    size = Wallet.query.count()
+    pageNumber = int(request.args.get('pageNumber'))
+    walletsPerPage = 6
+    pagesVisited = pageNumber * walletsPerPage
+    wallets = Wallet.query[pagesVisited:pagesVisited + walletsPerPage]
+    result = wallets_schema.dump(wallets)
 
     if result:
-        return ApiResponse("Wallets succesfully fetched", result, 200)
+        return GetResponse("Wallets succesfully fetched", result, size,  200)
     else:
         return ApiResponse("No wallets exist", result, 404)
 
